@@ -1,13 +1,22 @@
 ---
 name: django-verification
-description: Django 项目的验证循环（Verification loop）：包含数据库迁移、代码检查、带覆盖率的测试、安全扫描，以及在发布或 PR 前的部署就绪检查。
+description: "针对 Django 项目的验证循环：包含数据库迁移、代码检查、带覆盖率的测试、安全扫描，以及在发布或 PR 前的部署就绪检查。"
+origin: ECC
 ---
 
-# Django 验证循环（Verification Loop）
+# Django 验证循环 (Django Verification Loop)
 
-在提交 PR 之前、重大变更之后以及预部署（Pre-deploy）之前运行，以确保 Django 应用程序的质量和安全性。
+在提交 PR 前、重大变更后以及部署前运行，以确保 Django 应用的质量与安全性。
 
-## 阶段 1：环境检查 (Phase 1: Environment Check)
+## 何时启用
+
+- 在为 Django 项目提交 Pull Request 前
+- 在重大模型变更、迁移更新或依赖升级后
+- 预发布（Staging）或生产环境部署前的验证
+- 运行完整的 环境检查 → 代码检查 → 测试 → 安全扫描 → 部署就绪流水线
+- 验证迁移安全性及测试覆盖率
+
+## 阶段 1：环境检查 (Environment Check)
 
 ```bash
 # 验证 Python 版本
@@ -23,7 +32,7 @@ python -c "import os; import environ; print('DJANGO_SECRET_KEY set' if os.enviro
 
 如果环境配置错误，请停止并修复。
 
-## 阶段 2：代码质量与格式化 (Phase 2: Code Quality & Formatting)
+## 阶段 2：代码质量与格式化 (Code Quality & Formatting)
 
 ```bash
 # 类型检查
@@ -32,7 +41,7 @@ mypy . --config-file pyproject.toml
 # 使用 ruff 进行 Lint 检查
 ruff check . --fix
 
-# 使用 black 进行格式化
+# 使用 black 进行格式化检查
 black . --check
 black .  # 自动修复
 
@@ -48,18 +57,18 @@ python manage.py check --deploy
 - 公共函数缺失类型提示（Type hints）
 - 违反 PEP 8 格式规范
 - 未排序的导入语句
-- 生产环境配置中遗留了调试设置
+- 生产环境配置中遗留了调试设置（Debug settings）
 
-## 阶段 3：数据库迁移 (Phase 3: Migrations)
+## 阶段 3：数据库迁移 (Migrations)
 
 ```bash
-# 检查是否存在未应用的迁移
+# 检查未应用的迁移
 python manage.py showmigrations
 
 # 创建缺失的迁移
 python manage.py makemigrations --check
 
-# 模拟迁移应用（Dry-run）
+# 预演迁移应用 (Dry-run)
 python manage.py migrate --plan
 
 # 应用迁移（测试环境）
@@ -69,32 +78,32 @@ python manage.py migrate
 python manage.py makemigrations --merge  # 仅在存在冲突时运行
 ```
 
-报告内容：
-- 待处理迁移的数量
+报告：
+- 待处理的迁移数量
 - 任何迁移冲突
-- 存在模型变更但未生成迁移
+- 模型变更但未生成迁移文件
 
-## 阶段 4：测试与覆盖率 (Phase 4: Tests + Coverage)
+## 阶段 4：测试 + 覆盖率 (Tests + Coverage)
 
 ```bash
-# 使用 pytest 运行所有测试
+# 使用 pytest 运行所有测试并生成覆盖率报告
 pytest --cov=apps --cov-report=html --cov-report=term-missing --reuse-db
 
 # 运行特定应用的测试
 pytest apps/users/tests/
 
-# 使用标记运行
+# 运行带有标记的测试
 pytest -m "not slow"  # 跳过慢速测试
 pytest -m integration  # 仅运行集成测试
 
-# 覆盖率报告
+# 查看覆盖率报告
 open htmlcov/index.html
 ```
 
-报告内容：
-- 测试统计：X 通过，Y 失败，Z 跳过
+报告：
+- 测试总计：X 通过，Y 失败，Z 跳过
 - 总体覆盖率：XX%
-- 各应用的覆盖率明细
+- 各应用覆盖率明细
 
 覆盖率目标：
 
@@ -106,17 +115,17 @@ open htmlcov/index.html
 | 服务 (Services) | 90%+ |
 | 总体 | 80%+ |
 
-## 阶段 5：安全扫描 (Phase 5: Security Scan)
+## 阶段 5：安全扫描 (Security Scan)
 
 ```bash
-# 依赖项漏洞扫描
+# 依赖漏洞扫描
 pip-audit
 safety check --full-report
 
 # Django 安全检查
 python manage.py check --deploy
 
-# Bandit 安全 Linter
+# Bandit 安全 Lint 检查
 bandit -r . -f json -o bandit-report.json
 
 # 密钥扫描（如果安装了 gitleaks）
@@ -126,13 +135,13 @@ gitleaks detect --source . --verbose
 python -c "from django.core.exceptions import ImproperlyConfigured; from django.conf import settings; settings.DEBUG"
 ```
 
-报告内容：
-- 发现的有漏洞的依赖项
+报告：
+- 发现的有漏洞的依赖
 - 安全配置问题
-- 检测到的硬编码密钥
-- DEBUG 模式状态（在生产环境中应为 False）
+- 检测到硬编码的密钥
+- DEBUG 模式状态（生产环境应为 False）
 
-## 阶段 6：Django 管理命令 (Phase 6: Django Management Commands)
+## 阶段 6：Django 管理命令 (Django Management Commands)
 
 ```bash
 # 检查模型问题
@@ -141,7 +150,7 @@ python manage.py check
 # 收集静态文件
 python manage.py collectstatic --noinput --clear
 
-# 创建超级用户（如果测试需要）
+# 创建超级用户（如测试需要）
 echo "from apps.users.models import User; User.objects.create_superuser('admin@example.com', 'admin')" | python manage.py shell
 
 # 数据库完整性检查
@@ -151,12 +160,12 @@ python manage.py check --database default
 python -c "from django.core.cache import cache; cache.set('test', 'value', 10); print(cache.get('test'))"
 ```
 
-## 阶段 7：性能检查 (Phase 7: Performance Checks)
+## 阶段 7：性能检查 (Performance Checks)
 
 ```bash
 # Django Debug Toolbar 输出（检查 N+1 查询）
 # 在 DEBUG=True 的开发模式下运行并访问页面
-# 在 SQL 面板中查找重复查询
+# 在 SQL 面板中查看重复查询
 
 # 查询计数分析
 django-admin debugsqlshell  # 如果安装了 django-debug-sqlshell
@@ -170,15 +179,15 @@ with connection.cursor() as cursor:
 EOF
 ```
 
-报告内容：
-- 每个页面的查询数量（典型页面应 < 50）
+报告：
+- 每页查询数量（典型页面应 < 50）
 - 缺失的数据库索引
-- 检测到的重复查询
+- 检测到重复查询
 
-## 阶段 8：静态资源 (Phase 8: Static Assets)
+## 阶段 8：静态资源 (Static Assets)
 
 ```bash
-# 检查 npm 依赖项（如果使用 npm）
+# 检查 npm 依赖（如果使用 npm）
 npm audit
 npm audit fix
 
@@ -190,7 +199,7 @@ ls -la staticfiles/
 python manage.py findstatic css/style.css
 ```
 
-## 阶段 9：配置审查 (Phase 9: Configuration Review)
+## 阶段 9：配置审查 (Configuration Review)
 
 ```python
 # 在 Python shell 中运行以验证设置
@@ -200,12 +209,12 @@ import os
 
 # 关键检查项
 checks = {
-    'DEBUG is False': not settings.DEBUG,
-    'SECRET_KEY set': bool(settings.SECRET_KEY and len(settings.SECRET_KEY) > 30),
-    'ALLOWED_HOSTS set': len(settings.ALLOWED_HOSTS) > 0,
-    'HTTPS enabled': getattr(settings, 'SECURE_SSL_REDIRECT', False),
-    'HSTS enabled': getattr(settings, 'SECURE_HSTS_SECONDS', 0) > 0,
-    'Database configured': settings.DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3',
+    'DEBUG 为 False': not settings.DEBUG,
+    'SECRET_KEY 已设置': bool(settings.SECRET_KEY and len(settings.SECRET_KEY) > 30),
+    'ALLOWED_HOSTS 已设置': len(settings.ALLOWED_HOSTS) > 0,
+    'HTTPS 已启用': getattr(settings, 'SECURE_SSL_REDIRECT', False),
+    'HSTS 已启用': getattr(settings, 'SECURE_HSTS_SECONDS', 0) > 0,
+    '数据库已正确配置': settings.DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3',
 }
 
 for check, result in checks.items():
@@ -214,22 +223,22 @@ for check, result in checks.items():
 EOF
 ```
 
-## 阶段 10：日志配置 (Phase 10: Logging Configuration)
+## 阶段 10：日志配置 (Logging Configuration)
 
 ```bash
 # 测试日志输出
 python manage.py shell << EOF
 import logging
 logger = logging.getLogger('django')
-logger.warning('Test warning message')
-logger.error('Test error message')
+logger.warning('测试警告消息')
+logger.error('测试错误消息')
 EOF
 
 # 检查日志文件（如果已配置）
 tail -f /var/log/django/django.log
 ```
 
-## 阶段 11：API 文档 (Phase 11: API Documentation)
+## 阶段 11：API 文档 (API Documentation, 如果使用 DRF)
 
 ```bash
 # 生成 Schema
@@ -239,20 +248,20 @@ python manage.py generateschema --format openapi-json > schema.json
 # 检查 schema.json 是否为有效的 JSON
 python -c "import json; json.load(open('schema.json'))"
 
-# 访问 Swagger UI（如果使用 drf-yasg）
-# 在浏览器中访问 http://localhost:8000/swagger/
+# 访问 Swagger UI (如果使用 drf-yasg)
+# 在浏览器访问 http://localhost:8000/swagger/
 ```
 
-## 阶段 12：差异审查 (Phase 12: Diff Review)
+## 阶段 12：差异审查 (Diff Review)
 
 ```bash
-# 显示 diff 统计信息
+# 显示差异统计
 git diff --stat
 
-# 显示实际变更
+# 显示实际变更内容
 git diff
 
-# 显示已变更的文件
+# 显示变更的文件名
 git diff --name-only
 
 # 检查常见问题
@@ -266,10 +275,10 @@ git diff | grep "import pdb"  # 调试器
 - 无调试语句（print, pdb, breakpoint()）
 - 关键代码中无 TODO/FIXME 注释
 - 无硬编码的密钥或凭据
-- 模型变更已包含数据库迁移
+- 模型变更已包含数据库迁移文件
 - 配置变更已记录文档
 - 外部调用已包含错误处理
-- 视需要包含事务管理（Transaction management）
+- 关键位置已进行事务管理
 
 ## 输出模板 (Output Template)
 
@@ -277,24 +286,24 @@ git diff | grep "import pdb"  # 调试器
 DJANGO 验证报告
 ==========================
 
-阶段 1：环境检查 (Phase 1: Environment Check)
+阶段 1：环境检查
   ✓ Python 3.11.5
   ✓ 虚拟环境已激活
   ✓ 所有环境变量已设置
 
-阶段 2：代码质量 (Phase 2: Code Quality)
+阶段 2：代码质量
   ✓ mypy: 无类型错误
   ✗ ruff: 发现 3 个问题（已自动修复）
-  ✓ black: 无格式化问题
-  ✓ isort: 导入语句已排序
+  ✓ black: 无格式问题
+  ✓ isort: 导入语句已正确排序
   ✓ manage.py check: 无问题
 
-阶段 3：数据库迁移 (Phase 3: Migrations)
+阶段 3：数据库迁移
   ✓ 无未应用的迁移
   ✓ 无迁移冲突
-  ✓ 所有模型均有迁移
+  ✓ 所有模型均有迁移文件
 
-阶段 4：测试与覆盖率 (Phase 4: Tests + Coverage)
+阶段 4：测试 + 覆盖率
   测试：247 通过，0 失败，5 跳过
   覆盖率：
     总体：87%
@@ -303,62 +312,62 @@ DJANGO 验证报告
     orders: 85%
     payments: 91%
 
-阶段 5：安全扫描 (Phase 5: Security Scan)
+阶段 5：安全扫描
   ✗ pip-audit: 发现 2 个漏洞（需要修复）
   ✓ safety check: 无问题
   ✓ bandit: 无安全问题
   ✓ 未检测到密钥
   ✓ DEBUG = False
 
-阶段 6：Django 命令 (Phase 6: Django Commands)
+阶段 6：Django 命令
   ✓ collectstatic 已完成
   ✓ 数据库完整性正常
   ✓ 缓存后端可连接
 
-阶段 7：性能 (Phase 7: Performance)
+阶段 7：性能
   ✓ 未检测到 N+1 查询
   ✓ 数据库索引已配置
   ✓ 查询计数在可接受范围内
 
-阶段 8：静态资源 (Phase 8: Static Assets)
+阶段 8：静态资源
   ✓ npm audit: 无漏洞
   ✓ 资源构建成功
   ✓ 静态文件已收集
 
-阶段 9：配置审查 (Phase 9: Configuration)
+阶段 9：配置
   ✓ DEBUG = False
   ✓ SECRET_KEY 已配置
   ✓ ALLOWED_HOSTS 已设置
   ✓ HTTPS 已启用
   ✓ HSTS 已启用
-  ✓ 数据库已配置
+  ✓ 数据库已正确配置
 
-阶段 10：日志 (Phase 10: Logging)
+阶段 10：日志
   ✓ 日志已配置
   ✓ 日志文件可写
 
-阶段 11：API 文档 (Phase 11: API Documentation)
+阶段 11：API 文档
   ✓ Schema 已生成
   ✓ Swagger UI 可访问
 
-阶段 12：差异审查 (Phase 12: Diff Review)
-  文件变更：12
+阶段 12：差异审查
+  变更文件数：12
   +450, -120 行
   ✓ 无调试语句
   ✓ 无硬编码密钥
-  ✓ 已包含迁移
+  ✓ 已包含迁移文件
 
-建议：⚠️ 在部署前修复 pip-audit 漏洞
+建议：⚠️ 在部署前修复 pip-audit 发现的漏洞
 
 后续步骤：
-1. 更新有漏洞的依赖项
+1. 更新有漏洞的依赖
 2. 重新运行安全扫描
 3. 部署到预发布环境进行最终测试
 ```
 
-## 预部署检查清单 (Pre-Deployment Checklist)
+## 部署前检查清单 (Pre-Deployment Checklist)
 
-- [ ] 所有测试均通过
+- [ ] 所有测试均已通过
 - [ ] 覆盖率 ≥ 80%
 - [ ] 无安全漏洞
 - [ ] 无未应用的迁移
@@ -367,11 +376,11 @@ DJANGO 验证报告
 - [ ] ALLOWED_HOSTS 已正确设置
 - [ ] 数据库备份已启用
 - [ ] 静态文件已收集并提供服务
-- [ ] 日志已配置并正常工作
-- [ ] 错误监控（Sentry 等）已配置
+- [ ] 日志已配置且正常工作
+- [ ] 错误监控（如 Sentry 等）已配置
 - [ ] CDN 已配置（如适用）
 - [ ] Redis/缓存后端已配置
-- [ ] Celery worker 正在运行（如适用）
+- [ ] Celery worker 已运行（如适用）
 - [ ] HTTPS/SSL 已配置
 - [ ] 环境变量已记录文档
 
@@ -446,15 +455,15 @@ jobs:
 
 | 检查项 | 命令 |
 |-------|---------|
-| 环境 (Environment) | `python --version` |
-| 类型检查 (Type checking) | `mypy .` |
-| 代码检查 (Linting) | `ruff check .` |
-| 格式化 (Formatting) | `black . --check` |
-| 数据库迁移 (Migrations) | `python manage.py makemigrations --check` |
-| 测试 (Tests) | `pytest --cov=apps` |
-| 安全 (Security) | `pip-audit && bandit -r .` |
-| Django 检查 (Django check) | `python manage.py check --deploy` |
-| 收集静态资源 (Collectstatic) | `python manage.py collectstatic --noinput` |
-| 差异统计 (Diff stats) | `git diff --stat` |
+| 环境 | `python --version` |
+| 类型检查 | `mypy .` |
+| Lint 检查 | `ruff check .` |
+| 格式化 | `black . --check` |
+| 迁移 | `python manage.py makemigrations --check` |
+| 测试 | `pytest --cov=apps` |
+| 安全 | `pip-audit && bandit -r .` |
+| Django 检查 | `python manage.py check --deploy` |
+| 静态文件收集 | `python manage.py collectstatic --noinput` |
+| 差异统计 | `git diff --stat` |
 
-记住：自动化验证可以捕捉常见问题，但不能取代手动代码审查和在预发布环境（Staging environment）中的测试。
+记住：自动化验证可以捕捉常见问题，但不能取代人工代码审查和在预发布环境中的手动测试。

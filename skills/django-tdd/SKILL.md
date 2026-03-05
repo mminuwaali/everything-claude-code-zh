@@ -1,11 +1,12 @@
 ---
 name: django-tdd
-description: 使用 pytest-django、测试驱动开发（TDD）方法论、factory_boy、Mock 模拟、覆盖率统计以及 Django REST Framework API 测试的 Django 测试策略。
+description: 使用 pytest-django 进行 Django 测试的策略、TDD 方法论、factory_boy、Mock 模拟、测试覆盖率以及测试 Django REST Framework API。
+origin: ECC
 ---
 
-# Django TDD 测试指南
+# 使用 TDD 进行 Django 测试
 
-使用 pytest、factory_boy 和 Django REST Framework 对 Django 应用进行测试驱动开发（TDD）。
+使用 pytest、factory_boy 和 Django REST Framework 对 Django 应用程序进行测试驱动开发（TDD）。
 
 ## 何时激活
 
@@ -16,23 +17,23 @@ description: 使用 pytest-django、测试驱动开发（TDD）方法论、facto
 
 ## Django 的 TDD 工作流
 
-### 红-绿-重构循环（Red-Green-Refactor Cycle）
+### 红-绿-重构（Red-Green-Refactor）周期
 
 ```python
-# 步骤 1：红色（RED） - 编写失败的测试
+# 步骤 1: 红（RED） - 编写失败的测试
 def test_user_creation():
     user = User.objects.create_user(email='test@example.com', password='testpass123')
     assert user.email == 'test@example.com'
     assert user.check_password('testpass123')
     assert not user.is_staff
 
-# 步骤 2：绿色（GREEN） - 编写代码使测试通过
-# 创建 User 模型或工厂（Factory）
+# 步骤 2: 绿（GREEN） - 使测试通过
+# 创建 User 模型或工厂
 
-# 步骤 3：重构（REFACTOR） - 在保持测试通过的前提下优化代码
+# 步骤 3: 重构（REFACTOR） - 在保持测试通过的同时改进代码
 ```
 
-## 环境搭建
+## 配置
 
 ### pytest 配置
 
@@ -52,7 +53,7 @@ addopts =
     --cov-report=term-missing
     --strict-markers
 markers =
-    slow: 标记为耗时较长的测试
+    slow: 标记为慢速测试
     integration: 标记为集成测试
 ```
 
@@ -70,7 +71,7 @@ DATABASES = {
     }
 }
 
-# 禁用迁移以提升速度
+# 禁用迁移以提高速度
 class DisableMigrations:
     def __contains__(self, item):
         return True
@@ -80,15 +81,15 @@ class DisableMigrations:
 
 MIGRATION_MODULES = DisableMigrations()
 
-# 使用更快的密码哈希算法
+# 更快的密码哈希算法
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
-# 邮件后端配置
+# 邮件后端
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Celery 始终同步执行
+# Celery 设置为同步执行
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 ```
@@ -110,7 +111,7 @@ def timezone_settings(settings):
 
 @pytest.fixture
 def user(db):
-    """创建测试用户。"""
+    """创建一个测试用户。"""
     return User.objects.create_user(
         email='test@example.com',
         password='testpass123',
@@ -119,7 +120,7 @@ def user(db):
 
 @pytest.fixture
 def admin_user(db):
-    """创建管理员用户。"""
+    """创建一个管理员用户。"""
     return User.objects.create_superuser(
         email='admin@example.com',
         password='adminpass123',
@@ -147,7 +148,7 @@ def authenticated_api_client(api_client, user):
 
 ## Factory Boy
 
-### 工厂配置
+### 工厂设置
 
 ```python
 # tests/factories.py
@@ -233,7 +234,7 @@ def test_multiple_products():
     assert len(products) == 10
 ```
 
-## 模型测试（Model Testing）
+## 模型（Model）测试
 
 ### 模型测试用例
 
@@ -265,7 +266,7 @@ class TestUserModel:
         assert user.is_superuser
 
     def test_user_str(self, db):
-        """测试用户字符串表示形式。"""
+        """测试用户的字符串表示。"""
         user = UserFactory(email='test@example.com')
         assert str(user) == 'test@example.com'
 
@@ -280,7 +281,7 @@ class TestProductModel:
         assert product.created_at is not None
 
     def test_product_slug_generation(self, db):
-        """测试 Slug 自动生成。"""
+        """测试自动生成 slug。"""
         product = ProductFactory(name='Test Product')
         assert product.slug == 'test-product'
 
@@ -309,7 +310,7 @@ class TestProductModel:
             product.reduce_stock(10)  # 库存不足
 ```
 
-## 视图测试（View Testing）
+## 视图（View）测试
 
 ### Django 视图测试
 
@@ -341,20 +342,20 @@ class TestProductViews:
         assert response.context['product'] == product
 
     def test_product_create_requires_login(self, client, db):
-        """测试创建产品需要登录认证。"""
+        """测试创建产品需要身份认证。"""
         response = client.get(reverse('products:create'))
 
         assert response.status_code == 302
         assert response.url.startswith('/accounts/login/')
 
     def test_product_create_authenticated(self, authenticated_client, db):
-        """测试以已认证用户身份创建产品。"""
+        """测试已认证用户创建产品。"""
         response = authenticated_client.get(reverse('products:create'))
 
         assert response.status_code == 200
 
     def test_product_create_post(self, authenticated_client, db, category):
-        """测试通过 POST 请求创建产品。"""
+        """测试通过 POST 创建产品。"""
         data = {
             'name': 'Test Product',
             'description': 'A test product',
@@ -371,7 +372,7 @@ class TestProductViews:
 
 ## DRF API 测试
 
-### 序列化器测试
+### 序列化器（Serializer）测试
 
 ```python
 # tests/test_serializers.py
@@ -384,7 +385,7 @@ class TestProductSerializer:
     """测试 ProductSerializer。"""
 
     def test_serialize_product(self, db):
-        """测试序列化产品对象。"""
+        """测试序列化产品。"""
         product = ProductFactory()
         serializer = ProductSerializer(product)
 
@@ -450,7 +451,7 @@ from django.urls import reverse
 from tests.factories import ProductFactory, UserFactory
 
 class TestProductAPI:
-    """测试产品 API 接口。"""
+    """测试产品 API 端点。"""
 
     @pytest.fixture
     def api_client(self):
@@ -468,7 +469,7 @@ class TestProductAPI:
         assert response.data['count'] == 10
 
     def test_retrieve_product(self, api_client, db):
-        """测试获取单个产品详情。"""
+        """测试获取单个产品。"""
         product = ProductFactory()
 
         url = reverse('api:product-detail', kwargs={'pk': product.id})
@@ -478,7 +479,7 @@ class TestProductAPI:
         assert response.data['id'] == product.id
 
     def test_create_product_unauthorized(self, api_client, db):
-        """测试未授权时创建产品。"""
+        """测试未授权创建产品。"""
         url = reverse('api:product-list')
         data = {'name': 'Test Product', 'price': '99.99'}
 
@@ -487,7 +488,7 @@ class TestProductAPI:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_product_authorized(self, authenticated_api_client, db):
-        """测试以已认证用户身份创建产品。"""
+        """测试已认证用户创建产品。"""
         url = reverse('api:product-list')
         data = {
             'name': 'Test Product',
@@ -545,7 +546,7 @@ class TestProductAPI:
         assert response.data['count'] == 1
 ```
 
-## Mock 模拟与补丁（Mocking and Patching）
+## Mock 模拟与打补丁（Patching）
 
 ### 模拟外部服务
 
@@ -555,12 +556,12 @@ from unittest.mock import patch, Mock
 import pytest
 
 class TestPaymentView:
-    """使用模拟支付网关测试支付视图。"""
+    """测试使用了 Mock 模拟支付网关的支付视图。"""
 
     @patch('apps.payments.services.stripe')
     def test_successful_payment(self, mock_stripe, client, user, product):
-        """使用模拟的 Stripe 测试成功支付。"""
-        # 配置模拟对象
+        """测试使用 Mock Stripe 的成功支付流程。"""
+        # 配置 Mock
         mock_stripe.Charge.create.return_value = {
             'id': 'ch_123',
             'status': 'succeeded',
@@ -608,7 +609,7 @@ def test_order_confirmation_email(db, order):
     assert 'Order Confirmation' in mail.outbox[0].subject
 ```
 
-## 集成测试（Integration Testing）
+## 集成测试
 
 ### 全流程测试
 
@@ -622,8 +623,8 @@ class TestCheckoutFlow:
     """测试完整的结账流程。"""
 
     def test_guest_to_purchase_flow(self, client, db):
-        """测试从游客到购买完成的完整流程。"""
-        # 步骤 1：注册
+        """测试从游客到购买的完整流程。"""
+        # 步骤 1: 注册
         response = client.post(reverse('users:register'), {
             'email': 'test@example.com',
             'password': 'testpass123',
@@ -631,31 +632,31 @@ class TestCheckoutFlow:
         })
         assert response.status_code == 302
 
-        # 步骤 2：登录
+        # 步骤 2: 登录
         response = client.post(reverse('users:login'), {
             'email': 'test@example.com',
             'password': 'testpass123',
         })
         assert response.status_code == 302
 
-        # 步骤 3：浏览产品
+        # 步骤 3: 浏览产品
         product = ProductFactory(price=100)
         response = client.get(reverse('products:detail', kwargs={'slug': product.slug}))
         assert response.status_code == 200
 
-        # 步骤 4：添加到购物车
+        # 步骤 4: 添加到购物车
         response = client.post(reverse('cart:add'), {
             'product_id': product.id,
             'quantity': 1,
         })
         assert response.status_code == 302
 
-        # 步骤 5：结账
+        # 步骤 5: 结账
         response = client.get(reverse('checkout:review'))
         assert response.status_code == 200
         assert product.name in response.content.decode()
 
-        # 步骤 6：完成购买
+        # 步骤 6: 完成购买
         with patch('apps.checkout.services.process_payment') as mock_payment:
             mock_payment.return_value = True
             response = client.post(reverse('checkout:complete'))
@@ -666,36 +667,36 @@ class TestCheckoutFlow:
 
 ## 测试最佳实践
 
-### 推荐做法（DO）
+### 应该（DO）
 
-- **使用工厂（Factories）**：避免手动创建对象。
-- **每个测试一个断言**：保持测试专注。
-- **描述性测试名称**：如 `test_user_cannot_delete_others_post`。
-- **测试边界情况**：空输入、None 值、边界条件。
-- **模拟（Mock）外部服务**：不要依赖外部 API。
-- **使用 Fixtures**：消除重复代码。
-- **测试权限控制**：确保授权逻辑正常工作。
-- **保持测试运行迅速**：使用 `--reuse-db` 和 `--nomigrations`。
+- **使用工厂（Factories）**: 而不是手动创建对象
+- **每个测试一个断言**: 保持测试专注
+- **使用描述性的测试名称**: 例如 `test_user_cannot_delete_others_post`
+- **测试边缘情况**: 空输入、None 值、边界条件
+- **模拟外部服务**: 不要依赖外部 API
+- **使用 Fixtures**: 消除重复
+- **测试权限**: 确保授权逻辑正常工作
+- **保持测试快速**: 使用 `--reuse-db` 和 `--nomigrations`
 
-### 避免做法（DON'T）
+### 不该（DON'T）
 
-- **不要测试 Django 内部机制**：相信 Django 自身已通过测试。
-- **不要测试第三方库代码**：相信库作者的测试。
-- **不要忽略失败的测试**：所有测试都必须通过。
-- **不要让测试产生依赖**：测试应该可以以任何顺序运行。
-- **不要过度模拟**：仅对外部依赖项进行 Mock。
-- **不要测试私有方法**：测试公共接口。
-- **不要使用生产数据库**：始终使用专用测试数据库。
+- **不要测试 Django 内部机制**: 相信 Django 本身是正常的
+- **不要测试第三方库代码**: 相信第三方库是正常的
+- **不要忽略失败的测试**: 所有测试必须通过
+- **不要使测试产生依赖**: 测试应该能以任何顺序运行
+- **不要过度使用 Mock**: 仅模拟外部依赖
+- **不要测试私有方法**: 只测试公共接口
+- **不要使用生产数据库**: 始终使用测试数据库
 
 ## 覆盖率（Coverage）
 
 ### 覆盖率配置
 
 ```bash
-# 运行带有覆盖率统计的测试
+# 运行带有覆盖率报告的测试
 pytest --cov=apps --cov-report=html --cov-report=term-missing
 
-# 生成并查看 HTML 报告
+# 生成 HTML 报告
 open htmlcov/index.html
 ```
 
@@ -706,9 +707,9 @@ open htmlcov/index.html
 | 模型 (Models) | 90%+ |
 | 序列化器 (Serializers) | 85%+ |
 | 视图 (Views) | 80%+ |
-| 服务层 (Services) | 90%+ |
+| 服务 (Services) | 90%+ |
 | 工具类 (Utilities) | 80%+ |
-| 总体 (Overall) | 80%+ |
+| 整体 | 80%+ |
 
 ## 快速参考
 
@@ -720,9 +721,9 @@ open htmlcov/index.html
 | `factory.create_batch(n)` | 创建多个对象 |
 | `patch('module.function')` | 模拟外部依赖 |
 | `override_settings` | 临时更改设置 |
-| `force_authenticate()` | 在测试中绕过认证 |
+| `force_authenticate()` | 在测试中绕过身份认证 |
 | `assertRedirects` | 检查重定向 |
 | `assertTemplateUsed` | 验证模板使用情况 |
 | `mail.outbox` | 检查已发送的邮件 |
 
-请记住：测试即文档。良好的测试能够解释代码的预期工作方式。保持测试简单、易读且易于维护。
+记住：测试即文档。良好的测试能够解释代码应该如何工作。保持测试简单、易读且易于维护。

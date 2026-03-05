@@ -1,35 +1,36 @@
 ---
 name: golang-testing
-description: Go 测试模式，包括表格驱动测试、子测试、基准测试、模糊测试和测试覆盖率。遵循测试驱动开发（TDD）方法论及地道的 Go 语言实践。
+description: Go 测试模式，包括表格驱动测试、子测试、基准测试、模糊测试和测试覆盖率。遵循具有惯用 Go 实践的 TDD 方法论。
+origin: ECC
 ---
 
-# Go 测试模式 (Go Testing Patterns)
+# Go 测试模式 (Testing Patterns)
 
-遵循测试驱动开发（TDD）方法论，编写可靠且易于维护的 Go 测试模式指南。
+遵循测试驱动开发（TDD）方法论，编写可靠且易于维护的 Go 测试的全面模式。
 
-## 激活场景 (When to Activate)
+## 何时激活
 
 - 编写新的 Go 函数或方法时
 - 为现有代码增加测试覆盖率时
-- 为性能关键型代码创建基准测试时
-- 为输入验证实现模糊测试时
+- 为性能关键型代码创建基准测试（Benchmarks）时
+- 为输入验证实现模糊测试（Fuzz tests）时
 - 在 Go 项目中遵循 TDD 工作流时
 
-## Go 的测试驱动开发 (TDD) 工作流
+## Go 的 TDD 工作流
 
 ### 红-绿-重构 (RED-GREEN-REFACTOR) 循环
 
 ```
-红色 (RED)      → 先写一个失败的测试
-绿色 (GREEN)    → 编写最少的代码使测试通过
-重构 (REFACTOR) → 在保持测试通过的前提下优化代码
-重复 (REPEAT)   → 继续处理下一个需求
+RED      → 先编写一个失败的测试
+GREEN    → 编写最少的代码使测试通过
+REFACTOR → 在保持测试通过的同时改进代码
+REPEAT   → 继续处理下一个需求
 ```
 
-### Go 中 TDD 的具体步骤
+### Go 中的分步 TDD
 
 ```go
-// 第 1 步：定义接口/签名
+// 步骤 1：定义接口/签名
 // calculator.go
 package calculator
 
@@ -37,7 +38,7 @@ func Add(a, b int) int {
     panic("not implemented") // 占位符
 }
 
-// 第 2 步：编写失败的测试 (RED)
+// 步骤 2：编写失败的测试 (RED)
 // calculator_test.go
 package calculator
 
@@ -51,26 +52,26 @@ func TestAdd(t *testing.T) {
     }
 }
 
-// 第 3 步：运行测试 - 验证失败 (FAIL)
+// 步骤 3：运行测试 - 验证失败 (FAIL)
 // $ go test
 // --- FAIL: TestAdd (0.00s)
 // panic: not implemented
 
-// 第 4 步：实现最简代码 (GREEN)
+// 步骤 4：实现最少代码 (GREEN)
 func Add(a, b int) int {
     return a + b
 }
 
-// 第 5 步：运行测试 - 验证通过 (PASS)
+// 步骤 5：运行测试 - 验证通过 (PASS)
 // $ go test
 // PASS
 
-// 第 6 步：根据需要进行重构，并验证测试依然通过
+// 步骤 6：如果需要则进行重构，并验证测试仍然通过
 ```
 
 ## 表格驱动测试 (Table-Driven Tests)
 
-Go 测试的标准模式。允许用最少的代码实现全面的覆盖。
+Go 测试的标准模式。能够以最少的代码实现全面的覆盖。
 
 ```go
 func TestAdd(t *testing.T) {
@@ -98,7 +99,7 @@ func TestAdd(t *testing.T) {
 }
 ```
 
-### 包含错误情况的表格驱动测试
+### 带错误情况的表格驱动测试
 
 ```go
 func TestParseConfig(t *testing.T) {
@@ -155,7 +156,7 @@ func TestParseConfig(t *testing.T) {
 
 ## 子测试与子基准测试 (Subtests and Sub-benchmarks)
 
-### 组织相关的测试
+### 组织相关测试
 
 ```go
 func TestUser(t *testing.T) {
@@ -224,14 +225,14 @@ func TestParallel(t *testing.T) {
 
 ```go
 func setupTestDB(t *testing.T) *sql.DB {
-    t.Helper() // 标记为助手函数
+    t.Helper() // 将此函数标记为测试助手函数
 
     db, err := sql.Open("sqlite3", ":memory:")
     if err != nil {
         t.Fatalf("failed to open database: %v", err)
     }
 
-    // 测试结束时进行清理
+    // 测试结束时清理
     t.Cleanup(func() {
         db.Close()
     })
@@ -263,7 +264,7 @@ func assertEqual[T comparable](t *testing.T, got, want T) {
 
 ```go
 func TestFileProcessing(t *testing.T) {
-    // 创建临时目录 - 会自动清理
+    // 创建临时目录 - 自动清理
     tmpDir := t.TempDir()
 
     // 创建测试文件
@@ -284,7 +285,7 @@ func TestFileProcessing(t *testing.T) {
 }
 ```
 
-## 黄金文件 (Golden Files)
+## Golden Files (对比文件测试)
 
 针对存储在 `testdata/` 中的预期输出文件进行测试。
 
@@ -307,7 +308,7 @@ func TestRender(t *testing.T) {
             golden := filepath.Join("testdata", tt.name+".golden")
 
             if *update {
-                // 更新黄金文件：go test -update
+                // 更新 golden file: go test -update
                 err := os.WriteFile(golden, got, 0644)
                 if err != nil {
                     t.Fatalf("failed to update golden file: %v", err)
@@ -329,7 +330,7 @@ func TestRender(t *testing.T) {
 
 ## 使用接口进行 Mock (Mocking with Interfaces)
 
-### 基于接口的 Mocking
+### 基于接口的 Mock
 
 ```go
 // 为依赖定义接口
@@ -391,7 +392,7 @@ func TestUserService(t *testing.T) {
 ```go
 func BenchmarkProcess(b *testing.B) {
     data := generateTestData(1000)
-    b.ResetTimer() // 不计入准备时间
+    b.ResetTimer() // 不要计算准备时间
 
     for i := 0; i < b.N; i++ {
         Process(data)
@@ -414,7 +415,7 @@ func BenchmarkSort(b *testing.B) {
             b.ResetTimer()
 
             for i := 0; i < b.N; i++ {
-                // 制作副本以避免对已排序数据进行排序
+                // 创建副本以避免对已排序的数据进行排序
                 tmp := make([]int, len(data))
                 copy(tmp, data)
                 sort.Ints(tmp)
@@ -475,11 +476,11 @@ func FuzzParseJSON(f *testing.F) {
         err := json.Unmarshal([]byte(input), &result)
 
         if err != nil {
-            // 随机输入产生无效 JSON 是符合预期的
+            // 对于随机输入，预期的结果是无效的 JSON
             return
         }
 
-        // 如果解析成功，重新编码应该也能成功
+        // 如果解析成功，重新编码应该也有效
         _, err = json.Marshal(result)
         if err != nil {
             t.Errorf("Marshal failed after successful Unmarshal: %v", err)
@@ -490,7 +491,7 @@ func FuzzParseJSON(f *testing.F) {
 // 运行：go test -fuzz=FuzzParseJSON -fuzztime=30s
 ```
 
-### 多参数模糊测试
+### 多输入模糊测试
 
 ```go
 func FuzzCompare(f *testing.F) {
@@ -520,7 +521,7 @@ func FuzzCompare(f *testing.F) {
 
 ## 测试覆盖率 (Test Coverage)
 
-### 运行覆盖率测试
+### 运行覆盖率检查
 
 ```bash
 # 基础覆盖率
@@ -535,7 +536,7 @@ go tool cover -html=coverage.out
 # 按函数查看覆盖率
 go tool cover -func=coverage.out
 
-# 配合竞态检测运行覆盖率
+# 带有竞态检测的覆盖率
 go test -race -coverprofile=coverage.out ./...
 ```
 
@@ -553,11 +554,11 @@ go test -race -coverprofile=coverage.out ./...
 ```go
 //go:generate mockgen -source=interface.go -destination=mock_interface.go
 
-// 在覆盖率配置文件中，通过 build tags 排除：
+// 在覆盖率配置文件中，使用构建标签排除：
 // go test -cover -tags=!generate ./...
 ```
 
-## HTTP 处理函数测试 (HTTP Handler Testing)
+## HTTP Handler 测试
 
 ```go
 func TestHealthHandler(t *testing.T) {
@@ -565,7 +566,7 @@ func TestHealthHandler(t *testing.T) {
     req := httptest.NewRequest(http.MethodGet, "/health", nil)
     w := httptest.NewRecorder()
 
-    // 调用处理函数
+    // 调用 handler
     HealthHandler(w, req)
 
     // 检查响应
@@ -640,31 +641,31 @@ func TestAPIHandler(t *testing.T) {
 }
 ```
 
-## 测试常用命令
+## 测试命令
 
 ```bash
 # 运行所有测试
 go test ./...
 
-# 以详细输出运行测试
+# 运行测试并输出详细信息
 go test -v ./...
 
 # 运行特定测试
 go test -run TestAdd ./...
 
-# 运行符合模式的测试
+# 运行匹配模式的测试
 go test -run "TestUser/Create" ./...
 
-# 开启竞态检测运行测试
+# 运行带有竞态检测器的测试
 go test -race ./...
 
-# 运行测试并查看覆盖率
+# 运行带有覆盖率检查的测试
 go test -cover -coverprofile=coverage.out ./...
 
 # 仅运行短测试
 go test -short ./...
 
-# 设置超时时间运行测试
+# 运行带有超时的测试
 go test -timeout 30s ./...
 
 # 运行基准测试
@@ -673,29 +674,29 @@ go test -bench=. -benchmem ./...
 # 运行模糊测试
 go test -fuzz=FuzzParse -fuzztime=30s ./...
 
-# 多次运行测试（用于检测不稳定测试）
+# 统计测试运行次数（用于检测不稳定的测试）
 go test -count=10 ./...
 ```
 
-## 最佳实践 (Best Practices)
+## 最佳实践
 
-**推荐做法 (DO):**
-- 测试先行 (TDD)
-- 使用表格驱动测试以实现全面覆盖
-- 测试行为而非实现
+**建议 (DO)：**
+- 先编写测试 (TDD)
+- 使用表格驱动测试实现全面覆盖
+- 测试行为，而非实现
 - 在助手函数中使用 `t.Helper()`
-- 为独立的测试使用 `t.Parallel()`
+- 为相互独立的测试使用 `t.Parallel()`
 - 使用 `t.Cleanup()` 清理资源
-- 使用描述场景的、有意义的测试名称
+- 使用描述场景的有意义的测试名称
 
-**不推荐做法 (DON'T):**
-- 直接测试私有函数（应通过公共 API 测试）
-- 在测试中使用 `time.Sleep()`（应使用 channel 或条件变量）
-- 忽略不稳定的测试 (Flaky tests)（应修复或移除）
-- Mock 一切（尽可能优先使用集成测试）
-- 跳过错误路径的测试
+**避免 (DON'T)：**
+- 直接测试私有函数（应通过公共 API 进行测试）
+- 在测试中使用 `time.Sleep()`（应使用通道或条件）
+- 忽视不稳定的测试（应修复或移除它们）
+- Mock 所有内容（尽可能优先使用集成测试）
+- 跳过错误路径测试
 
-## 与 CI/CD 集成
+## CI/CD 集成
 
 ```yaml
 # GitHub Actions 示例
@@ -716,4 +717,4 @@ test:
         awk -F'%' '{if ($1 < 80) exit 1}'
 ```
 
-**请记住**：测试即文档。它们展示了代码的预期用法。请清晰地编写并保持更新。
+**记住**：测试即文档。它们展示了代码应该如何被使用。请清晰地编写测试并保持更新。

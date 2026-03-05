@@ -1,64 +1,65 @@
 ---
 name: security-review
-description: 当添加身份认证（authentication）、处理用户输入、使用凭据（secrets）、创建 API 端点或实现支付/敏感功能时，请使用此技能。提供全面的安全检查清单和模式。
+description: 在添加身份验证、处理用户输入、操作机密信息、创建 API 接口或实现支付/敏感功能时使用此技能。提供全面的安全自查清单和模式。
+origin: ECC
 ---
 
-# 安全审查技能 (Security Review Skill)
+# 安全审查技能（Security Review Skill）
 
-此技能确保所有代码遵循安全最佳实践，并识别潜在的漏洞。
+此技能（Skill）旨在确保所有代码遵循安全最佳实践，并识别潜在的漏洞。
 
-## 何时激活
+## 何时启用
 
-- 实现身份认证（authentication）或授权（authorization）时
+- 实现身份验证（Authentication）或授权（Authorization）时
 - 处理用户输入或文件上传时
-- 创建新的 API 端点时
-- 处理凭据（secrets）或证书（credentials）时
+- 创建新的 API 接口（Endpoints）时
+- 操作机密（Secrets）或凭据（Credentials）时
 - 实现支付功能时
 - 存储或传输敏感数据时
 - 集成第三方 API 时
 
-## 安全检查清单
+## 安全自查清单
 
-### 1. 凭据管理 (Secrets Management)
+### 1. 机密管理（Secrets Management）
 
-#### ❌ 严禁这样做
+#### ❌ 严禁行为
 ```typescript
-const apiKey = "sk-proj-xxxxx"  // 硬编码凭据
-const dbPassword = "password123" // 在源代码中
+const apiKey = "sk-proj-xxxxx"  // 硬编码机密
+const dbPassword = "password123" // 出现在源代码中
 ```
 
-#### ✅ 务必这样做
+#### ✅ 推荐做法
 ```typescript
 const apiKey = process.env.OPENAI_API_KEY
 const dbUrl = process.env.DATABASE_URL
 
-// 验证凭据是否存在
+// 验证机密是否存在
 if (!apiKey) {
-  throw new Error('OPENAI_API_KEY not configured')
+  throw new Error('未配置 OPENAI_API_KEY')
 }
 ```
 
 #### 验证步骤
-- [ ] 不存在硬编码的 API 密钥、令牌（tokens）或密码
-- [ ] 所有凭据均存储在环境变量中
+- [ ] 无硬编码的 API 密钥、令牌（Tokens）或密码
+- [ ] 所有机密均存储在环境变量中
 - [ ] `.env.local` 已包含在 .gitignore 中
-- [ ] Git 历史记录中没有凭据
-- [ ] 生产环境凭据配置在托管平台（如 Vercel, Railway）
+- [ ] Git 历史记录中不包含机密信息
+- [ ] 生产环境机密配置在托管平台（如 Vercel, Railway）
 
-### 2. 输入校验 (Input Validation)
+### 2. 输入验证（Input Validation）
 
-#### 始终校验用户输入
+#### 始终验证用户输入
 ```typescript
 import { z } from 'zod'
 
-// 定义校验模式 (Schema)
+// 定义验证模式（Schema）
 const CreateUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(100),
   age: z.number().int().min(0).max(150)
 })
 
-// 在处理前校验
+// 在处理前进行验证
 export async function createUser(input: unknown) {
   try {
     const validated = CreateUserSchema.parse(input)
@@ -72,26 +73,26 @@ export async function createUser(input: unknown) {
 }
 ```
 
-#### 文件上传校验
+#### 文件上传验证
 ```typescript
 function validateFileUpload(file: File) {
-  // 大小检查 (最大 5MB)
+  // 大小检查（最大 5MB）
   const maxSize = 5 * 1024 * 1024
   if (file.size > maxSize) {
-    throw new Error('File too large (max 5MB)')
+    throw new Error('文件过大（最大 5MB）')
   }
 
   // 类型检查
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
   if (!allowedTypes.includes(file.type)) {
-    throw new Error('Invalid file type')
+    throw new Error('无效的文件类型')
   }
 
-  // 后缀检查
+  // 扩展名检查
   const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif']
   const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0]
   if (!extension || !allowedExtensions.includes(extension)) {
-    throw new Error('Invalid file extension')
+    throw new Error('无效的文件扩展名')
   }
 
   return true
@@ -99,15 +100,15 @@ function validateFileUpload(file: File) {
 ```
 
 #### 验证步骤
-- [ ] 所有用户输入均通过模式（schemas）校验
-- [ ] 限制文件上传（大小、类型、后缀）
-- [ ] 不在查询中直接使用原始用户输入
-- [ ] 使用白名单校验（而非黑名单）
+- [ ] 所有用户输入均通过模式（Schemas）验证
+- [ ] 文件上传受到限制（大小、类型、扩展名）
+- [ ] 查询中不直接使用用户输入
+- [ ] 使用白名单验证（而非黑名单）
 - [ ] 错误消息不泄露敏感信息
 
-### 3. SQL 注入防护 (SQL Injection Prevention)
+### 3. SQL 注入防护（SQL Injection Prevention）
 
-#### ❌ 严禁拼接 SQL 字符串
+#### ❌ 严禁拼接 SQL
 ```typescript
 // 危险 - 存在 SQL 注入漏洞
 const query = `SELECT * FROM users WHERE email = '${userEmail}'`
@@ -122,7 +123,7 @@ const { data } = await supabase
   .select('*')
   .eq('email', userEmail)
 
-// 或者使用原生 SQL
+// 或使用原始 SQL
 await db.query(
   'SELECT * FROM users WHERE email = $1',
   [userEmail]
@@ -131,18 +132,18 @@ await db.query(
 
 #### 验证步骤
 - [ ] 所有数据库查询均使用参数化查询
-- [ ] SQL 中没有字符串拼接
-- [ ] 正确使用 ORM 或查询构建器（query builder）
-- [ ] Supabase 查询已正确清理（sanitized）
+- [ ] SQL 中无字符串拼接
+- [ ] 正确使用 ORM 或查询构建器（Query Builder）
+- [ ] Supabase 查询已正确过滤
 
-### 4. 认证与授权 (Authentication & Authorization)
+### 4. 身份验证与授权（Authentication & Authorization）
 
 #### JWT 令牌处理
 ```typescript
-// ❌ 错误：使用 localStorage (易受 XSS 攻击)
+// ❌ 错误做法：存储在 localStorage 中（易受 XSS 攻击）
 localStorage.setItem('token', token)
 
-// ✅ 正确：使用 httpOnly cookies
+// ✅ 正确做法：使用 httpOnly cookies
 res.setHeader('Set-Cookie',
   `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=3600`)
 ```
@@ -150,7 +151,7 @@ res.setHeader('Set-Cookie',
 #### 授权检查
 ```typescript
 export async function deleteUser(userId: string, requesterId: string) {
-  // 始终先验证授权
+  // 务必先验证授权
   const requester = await db.users.findUnique({
     where: { id: requesterId }
   })
@@ -162,12 +163,12 @@ export async function deleteUser(userId: string, requesterId: string) {
     )
   }
 
-  // 执行删除
+  // 执行删除操作
   await db.users.delete({ where: { id: userId } })
 }
 ```
 
-#### 行级安全性 (Supabase RLS)
+#### 行级安全性（Supabase Row Level Security）
 ```sql
 -- 在所有表上启用 RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -185,12 +186,12 @@ CREATE POLICY "Users update own data"
 
 #### 验证步骤
 - [ ] 令牌存储在 httpOnly cookies 中（而非 localStorage）
-- [ ] 在敏感操作前进行授权检查
-- [ ] 在 Supabase 中启用了行级安全性（Row Level Security）
+- [ ] 敏感操作前进行授权检查
+- [ ] 在 Supabase 中启用了行级安全性（RLS）
 - [ ] 实现了基于角色的访问控制（RBAC）
-- [ ] 会话管理（Session management）安全
+- [ ] 会话管理（Session Management）安全
 
-### 5. XSS 防护 (XSS Prevention)
+### 5. XSS 防护（XSS Prevention）
 
 #### 清理 HTML
 ```typescript
@@ -206,7 +207,7 @@ function renderUserContent(html: string) {
 }
 ```
 
-#### 内容安全策略 (CSP)
+#### 内容安全策略（Content Security Policy）
 ```typescript
 // next.config.js
 const securityHeaders = [
@@ -225,14 +226,14 @@ const securityHeaders = [
 ```
 
 #### 验证步骤
-- [ ] 已清理用户提供的 HTML
+- [ ] 清理了用户提供的 HTML
 - [ ] 配置了 CSP 响应头
-- [ ] 没有未经校验的动态内容渲染
+- [ ] 无未经验证的动态内容渲染
 - [ ] 使用了 React 内置的 XSS 防护机制
 
-### 6. CSRF 防护 (CSRF Protection)
+### 6. CSRF 防护（CSRF Protection）
 
-#### CSRF 令牌
+#### CSRF 令牌（Tokens）
 ```typescript
 import { csrf } from '@/lib/csrf'
 
@@ -257,11 +258,11 @@ res.setHeader('Set-Cookie',
 ```
 
 #### 验证步骤
-- [ ] 对状态变更操作使用了 CSRF 令牌
-- [ ] 所有 cookies 均设置了 SameSite=Strict
-- [ ] 实现了双重提交 cookie 模式（double-submit cookie pattern）
+- [ ] 在状态变更操作中使用 CSRF 令牌
+- [ ] 所有 Cookie 均设置 SameSite=Strict
+- [ ] 实现了双重提交 Cookie 模式（Double-submit cookie pattern）
 
-### 7. 速率限制 (Rate Limiting)
+### 7. 速率限制（Rate Limiting）
 
 #### API 速率限制
 ```typescript
@@ -269,48 +270,48 @@ import rateLimit from 'express-rate-limit'
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 分钟
-  max: 100, // 每个窗口 100 次请求
-  message: 'Too many requests'
+  max: 100, // 每个窗口期最大 100 次请求
+  message: '请求过于频繁'
 })
 
-// 应用到路由
+// 应用于路由
 app.use('/api/', limiter)
 ```
 
 #### 高消耗操作
 ```typescript
-// 对搜索操作执行更严格的速率限制
+// 为搜索操作设置更严格的速率限制
 const searchLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 分钟
-  max: 10, // 每分钟 10 次请求
-  message: 'Too many search requests'
+  max: 10, // 每分钟最大 10 次请求
+  message: '搜索请求过于频繁'
 })
 
 app.use('/api/search', searchLimiter)
 ```
 
 #### 验证步骤
-- [ ] 在所有 API 端点上启用了速率限制
-- [ ] 对高消耗操作执行更严格的限制
+- [ ] 所有 API 接口均设置了速率限制
+- [ ] 对高消耗操作设置了更严格的限制
 - [ ] 基于 IP 的速率限制
 - [ ] 基于用户的速率限制（已认证用户）
 
-### 8. 敏感数据泄露 (Sensitive Data Exposure)
+### 8. 敏感数据泄露（Sensitive Data Exposure）
 
 #### 日志记录
 ```typescript
-// ❌ 错误：记录敏感数据
+// ❌ 错误做法：记录敏感数据
 console.log('User login:', { email, password })
 console.log('Payment:', { cardNumber, cvv })
 
-// ✅ 正确：脱敏敏感数据
+// ✅ 正确做法：屏蔽敏感数据
 console.log('User login:', { email, userId })
 console.log('Payment:', { last4: card.last4, userId })
 ```
 
 #### 错误消息
 ```typescript
-// ❌ 错误：暴露内部细节
+// ❌ 错误做法：泄露内部细节
 catch (error) {
   return NextResponse.json(
     { error: error.message, stack: error.stack },
@@ -318,23 +319,23 @@ catch (error) {
   )
 }
 
-// ✅ 正确：通用的错误消息
+// ✅ 正确做法：通用的错误消息
 catch (error) {
   console.error('Internal error:', error)
   return NextResponse.json(
-    { error: 'An error occurred. Please try again.' },
+    { error: '发生错误，请稍后重试。' },
     { status: 500 }
   )
 }
 ```
 
 #### 验证步骤
-- [ ] 日志中不含密码、令牌或凭据
+- [ ] 日志中不包含密码、令牌或机密
 - [ ] 向用户展示通用的错误消息
-- [ ] 仅在服务器日志中记录详细错误
-- [ ] 不向用户暴露堆栈轨迹（stack traces）
+- [ ] 详细错误仅记录在服务器日志中
+- [ ] 不向用户暴露堆栈轨迹（Stack traces）
 
-### 9. 区块链安全 (Solana)
+### 9. 区块链安全 (Solana)（Blockchain Security）
 
 #### 钱包验证
 ```typescript
@@ -363,18 +364,18 @@ async function verifyWalletOwnership(
 async function verifyTransaction(transaction: Transaction) {
   // 验证收款人
   if (transaction.to !== expectedRecipient) {
-    throw new Error('Invalid recipient')
+    throw new Error('无效的收款人')
   }
 
   // 验证金额
   if (transaction.amount > maxAmount) {
-    throw new Error('Amount exceeds limit')
+    throw new Error('金额超出限制')
   }
 
-  // 验证用户余额是否充足
+  // 验证用户余额充足
   const balance = await getBalance(transaction.from)
   if (balance < transaction.amount) {
-    throw new Error('Insufficient balance')
+    throw new Error('余额不足')
   }
 
   return true
@@ -382,12 +383,12 @@ async function verifyTransaction(transaction: Transaction) {
 ```
 
 #### 验证步骤
-- [ ] 验证了钱包签名
-- [ ] 校验了交易详情
+- [ ] 已验证钱包签名
+- [ ] 已校验交易详情
 - [ ] 交易前进行余额检查
-- [ ] 不存在盲签（blind signing）交易
+- [ ] 不存在盲签（Blind transaction signing）行为
 
-### 10. 依赖项安全 (Dependency Security)
+### 10. 依赖项安全（Dependency Security）
 
 #### 定期更新
 ```bash
@@ -404,42 +405,42 @@ npm update
 npm outdated
 ```
 
-#### 锁定文件 (Lock Files)
+#### 锁定文件
 ```bash
-# 始终提交 lock 文件
+# 务必提交锁定文件
 git add package-lock.json
 
 # 在 CI/CD 中使用以确保可重现的构建
-npm ci  # 而非 npm install
+npm ci  # 而不是 npm install
 ```
 
 #### 验证步骤
 - [ ] 依赖项保持最新
 - [ ] 无已知漏洞（npm audit clean）
-- [ ] 已提交 lock 文件
+- [ ] 已提交锁定文件
 - [ ] 在 GitHub 上启用了 Dependabot
-- [ ] 定期执行安全更新
+- [ ] 定期进行安全更新
 
-## 安全测试
+## 安全测试（Security Testing）
 
 ### 自动化安全测试
 ```typescript
-// 测试身份认证
-test('requires authentication', async () => {
+// 测试身份验证
+test('需要身份验证', async () => {
   const response = await fetch('/api/protected')
   expect(response.status).toBe(401)
 })
 
 // 测试授权
-test('requires admin role', async () => {
+test('需要管理员角色', async () => {
   const response = await fetch('/api/admin', {
     headers: { Authorization: `Bearer ${userToken}` }
   })
   expect(response.status).toBe(403)
 })
 
-// 测试输入校验
-test('rejects invalid input', async () => {
+// 测试输入验证
+test('拒绝无效输入', async () => {
   const response = await fetch('/api/users', {
     method: 'POST',
     body: JSON.stringify({ email: 'not-an-email' })
@@ -448,7 +449,7 @@ test('rejects invalid input', async () => {
 })
 
 // 测试速率限制
-test('enforces rate limits', async () => {
+test('执行速率限制', async () => {
   const requests = Array(101).fill(null).map(() =>
     fetch('/api/endpoint')
   )
@@ -460,27 +461,27 @@ test('enforces rate limits', async () => {
 })
 ```
 
-## 部署前安全检查清单
+## 部署前安全自查清单
 
-在**任何**生产环境部署之前：
+在任何生产环境部署之前：
 
-- [ ] **凭据 (Secrets)**：无硬编码凭据，全部位于环境变量中
-- [ ] **输入校验**：所有用户输入均已校验
-- [ ] **SQL 注入**：所有查询均已参数化
-- [ ] **XSS**：用户内容已清理
-- [ ] **CSRF**：防护已启用
-- [ ] **身份认证**：正确的令牌处理
-- [ ] **授权**：角色检查已就位
-- [ ] **速率限制**：在所有端点上启用
-- [ ] **HTTPS**：在生产环境中强制执行
-- [ ] **安全响应头**：已配置 CSP, X-Frame-Options
-- [ ] **错误处理**：错误信息中无敏感数据
-- [ ] **日志记录**：日志中无敏感数据
-- [ ] **依赖项**：已更新且无漏洞
-- [ ] **行级安全性**：在 Supabase 中启用
-- [ ] **CORS**：已正确配置
-- [ ] **文件上传**：已校验（大小、类型）
-- [ ] **钱包签名**：已验证（如果是区块链项目）
+- [ ] **机密 (Secrets)**: 无硬编码机密，全部在环境变量中
+- [ ] **输入验证 (Input Validation)**: 所有用户输入均已验证
+- [ ] **SQL 注入 (SQL Injection)**: 所有查询均已参数化
+- [ ] **XSS**: 用户内容已清理
+- [ ] **CSRF**: 已启用防护
+- [ ] **身份验证 (Authentication)**: 正确的令牌处理
+- [ ] **授权 (Authorization)**: 角色检查已就绪
+- [ ] **速率限制 (Rate Limiting)**: 在所有接口上均已启用
+- [ ] **HTTPS**: 在生产环境中强制执行
+- [ ] **安全响应头 (Security Headers)**: 已配置 CSP, X-Frame-Options
+- [ ] **错误处理 (Error Handling)**: 错误中不包含敏感数据
+- [ ] **日志记录 (Logging)**: 日志中不包含敏感数据
+- [ ] **依赖项 (Dependencies)**: 保持最新，无已知漏洞
+- [ ] **行级安全性 (Row Level Security)**: 在 Supabase 中已启用
+- [ ] **CORS**: 已正确配置
+- [ ] **文件上传 (File Uploads)**: 已验证（大小、类型）
+- [ ] **钱包签名 (Wallet Signatures)**: 已验证（如果是区块链项目）
 
 ## 资源
 
@@ -491,4 +492,4 @@ test('enforces rate limits', async () => {
 
 ---
 
-**请记住**：安全并非可选项。一个漏洞就可能危害整个平台。如有疑虑，请宁可信其有，从严处理。
+**请记住**：安全不是可选项。一个漏洞就可能破坏整个平台。如有疑虑，请宁可保守。

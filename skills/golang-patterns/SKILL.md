@@ -1,18 +1,19 @@
 ---
 name: golang-patterns
-description: Go 语言惯用模式、最佳实践以及构建健壮、高效且可维护 Go 应用程序的规范。
+description: 编写稳健、高效且易于维护的 Go 应用程序的惯用模式、最佳实践和约定。
+origin: ECC
 ---
 
-# Go 开发模式
+# Go 开发模式 (Go Development Patterns)
 
-用于构建健壮、高效且可维护应用程序的惯用 Go 模式和最佳实践。
+构建稳健、高效且易于维护的应用程序的惯用 Go 模式和最佳实践。
 
-## 何时激活
+## 激活时机
 
 - 编写新的 Go 代码时
-- 审查 Go 代码时
-- 重构现有的 Go 代码时
-- 设计 Go 包（Package）/ 模块（Module）时
+- 评审 Go 代码时
+- 重构现有 Go 代码时
+- 设计 Go 包/模块时
 
 ## 核心原则
 
@@ -42,15 +43,15 @@ func GetUser(id string) (*User, error) {
 }
 ```
 
-### 2. 使零值（Zero Value）有用
+### 2. 使“零值”有用
 
-设计类型时，使其零值在无需显式初始化的情况下即可直接使用。
+设计类型时，使其零值（Zero Value）在无需显式初始化的情况下即可立即使用。
 
 ```go
-// 推荐：零值是有用的
+// 推荐：零值即有用
 type Counter struct {
     mu    sync.Mutex
-    count int // 零值为 0，可以直接使用
+    count int // 零值为 0，可直接使用
 }
 
 func (c *Counter) Inc() {
@@ -71,7 +72,7 @@ type BadCounter struct {
 
 ### 3. 接受接口，返回结构体
 
-函数应当接受接口（Interface）参数并返回具体类型（Concrete Type）。
+函数应当接受接口（Interface）参数并返回具体类型（Concrete types/Structs）。
 
 ```go
 // 推荐：接受接口，返回具体类型
@@ -89,9 +90,9 @@ func ProcessData(r io.Reader) (io.Reader, error) {
 }
 ```
 
-## 错误处理模式
+## 错误处理模式 (Error Handling Patterns)
 
-### 带上下文的错误包装（Error Wrapping）
+### 带有上下文的错误包装
 
 ```go
 // 推荐：使用上下文包装错误
@@ -123,7 +124,7 @@ func (e *ValidationError) Error() string {
     return fmt.Sprintf("validation failed on %s: %s", e.Field, e.Message)
 }
 
-// 常见场景的哨兵错误（Sentinel errors）
+// 常见情况的哨兵错误 (Sentinel errors)
 var (
     ErrNotFound     = errors.New("resource not found")
     ErrUnauthorized = errors.New("unauthorized")
@@ -160,19 +161,19 @@ func HandleError(err error) {
 // 不推荐：使用空白标识符忽略错误
 result, _ := doSomething()
 
-// 推荐：处理错误，或显式记录为何忽略是安全的
+// 推荐：处理错误，或显式说明为何忽略是安全的
 result, err := doSomething()
 if err != nil {
     return err
 }
 
 // 可接受：当错误确实无关紧要时（少见）
-_ = writer.Close() // 尽力清理，错误会在别处记录
+_ = writer.Close() // 尽力而为的清理，错误已在别处记录
 ```
 
-## 并发模式
+## 并发模式 (Concurrency Patterns)
 
-### 工作池（Worker Pool）
+### 工作池 (Worker Pool)
 
 ```go
 func WorkerPool(jobs <-chan Job, results chan<- Result, numWorkers int) {
@@ -193,7 +194,7 @@ func WorkerPool(jobs <-chan Job, results chan<- Result, numWorkers int) {
 }
 ```
 
-### 用于取消和超时的上下文（Context）
+### 使用 Context 处理取消和超时
 
 ```go
 func FetchWithTimeout(ctx context.Context, url string) ([]byte, error) {
@@ -215,7 +216,7 @@ func FetchWithTimeout(ctx context.Context, url string) ([]byte, error) {
 }
 ```
 
-### 优雅停机（Graceful Shutdown）
+### 优雅停机 (Graceful Shutdown)
 
 ```go
 func GracefulShutdown(server *http.Server) {
@@ -236,7 +237,7 @@ func GracefulShutdown(server *http.Server) {
 }
 ```
 
-### 用于协调 Goroutine 的 errgroup
+### 使用 errgroup 协调协程
 
 ```go
 import "golang.org/x/sync/errgroup"
@@ -264,10 +265,10 @@ func FetchAll(ctx context.Context, urls []string) ([][]byte, error) {
 }
 ```
 
-### 避免 Goroutine 泄漏
+### 避免协程泄漏 (Goroutine Leaks)
 
 ```go
-// 不推荐：如果上下文被取消，会发生 Goroutine 泄漏
+// 不推荐：如果 context 被取消，协程会泄漏
 func leakyFetch(ctx context.Context, url string) <-chan []byte {
     ch := make(chan []byte)
     go func() {
@@ -277,9 +278,9 @@ func leakyFetch(ctx context.Context, url string) <-chan []byte {
     return ch
 }
 
-// 推荐：正确处理取消信号
+// 推荐：正确处理取消
 func safeFetch(ctx context.Context, url string) <-chan []byte {
-    ch := make(chan []byte, 1) // 缓冲通道
+    ch := make(chan []byte, 1) // 使用缓冲通道
     go func() {
         data, err := fetch(url)
         if err != nil {
@@ -294,9 +295,9 @@ func safeFetch(ctx context.Context, url string) <-chan []byte {
 }
 ```
 
-## 接口设计
+## 接口设计 (Interface Design)
 
-### 小巧、专注的接口
+### 小而专注的接口
 
 ```go
 // 推荐：单方法接口
@@ -323,7 +324,7 @@ type ReadWriteCloser interface {
 ### 在使用处定义接口
 
 ```go
-// 在消费者（Consumer）包中定义，而非提供者包中
+// 在消费者包中定义，而不是在提供者包中
 package service
 
 // UserStore 定义了此服务所需的功能
@@ -336,11 +337,11 @@ type Service struct {
     store UserStore
 }
 
-// 具体实现可以在另一个包中
-// 它不需要知道此接口的存在
+// 具体实现在另一个包中
+// 它不需要显式感知这个接口
 ```
 
-### 通过类型断言（Type Assertion）实现可选行为
+### 通过类型断言支持可选行为
 
 ```go
 type Flusher interface {
@@ -352,7 +353,7 @@ func WriteAndFlush(w io.Writer, data []byte) error {
         return err
     }
 
-    // 如果支持则执行 Flush
+    // 如果支持则刷新
     if f, ok := w.(Flusher); ok {
         return f.Flush()
     }
@@ -360,7 +361,7 @@ func WriteAndFlush(w io.Writer, data []byte) error {
 }
 ```
 
-## 包组织结构
+## 包组织 (Package Organization)
 
 ### 标准项目布局
 
@@ -370,7 +371,7 @@ myproject/
 │   └── myapp/
 │       └── main.go           # 入口点
 ├── internal/
-│   ├── handler/              # HTTP 处理器
+│   ├── handler/              # HTTP 处理函数
 │   ├── service/              # 业务逻辑
 │   ├── repository/           # 数据访问
 │   └── config/               # 配置
@@ -378,7 +379,7 @@ myproject/
 │   └── client/               # 公共 API 客户端
 ├── api/
 │   └── v1/                   # API 定义 (proto, OpenAPI)
-├── testdata/                 # 测试固定装置 (Fixtures)
+├── testdata/                 # 测试固件
 ├── go.mod
 ├── go.sum
 └── Makefile
@@ -387,7 +388,7 @@ myproject/
 ### 包命名
 
 ```go
-// 推荐：短小、小写、无下划线
+// 推荐：简短、小写、无下划线
 package http
 package json
 package user
@@ -398,7 +399,7 @@ package json_parser
 package userService // 冗余的 'Service' 后缀
 ```
 
-### 避免包级别状态
+### 避免包级状态
 
 ```go
 // 不推荐：全局可变状态
@@ -408,7 +409,7 @@ func init() {
     db, _ = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 }
 
-// 推荐：依赖注入（Dependency Injection）
+// 推荐：依赖注入 (Dependency injection)
 type Server struct {
     db *sql.DB
 }
@@ -418,9 +419,9 @@ func NewServer(db *sql.DB) *Server {
 }
 ```
 
-## 结构体设计
+## 结构体设计 (Struct Design)
 
-### 函数式选项模式（Functional Options Pattern）
+### 函数式选项模式 (Functional Options Pattern)
 
 ```go
 type Server struct {
@@ -455,14 +456,14 @@ func NewServer(addr string, opts ...Option) *Server {
     return s
 }
 
-// 使用方式
+// 使用示例
 server := NewServer(":8080",
     WithTimeout(60*time.Second),
     WithLogger(customLogger),
 )
 ```
 
-### 通过嵌入（Embedding）实现组合
+### 通过嵌套实现组合 (Embedding)
 
 ```go
 type Logger struct {
@@ -474,7 +475,7 @@ func (l *Logger) Log(msg string) {
 }
 
 type Server struct {
-    *Logger // 嵌入 - Server 获得了 Log 方法
+    *Logger // 嵌套 - Server 获得了 Log 方法
     addr    string
 }
 
@@ -485,17 +486,17 @@ func NewServer(addr string) *Server {
     }
 }
 
-// 使用方式
+// 使用示例
 s := NewServer(":8080")
-s.Log("Starting...") // 调用嵌入的 Logger.Log
+s.Log("Starting...") // 调用了嵌入的 Logger.Log
 ```
 
-## 内存与性能
+## 内存与性能 (Memory and Performance)
 
-### 在已知大小时预分配切片（Slice）
+### 当大小已知时预分配切片
 
 ```go
-// 不推荐：多次扩容切片
+// 不推荐：切片会多次扩容
 func processItems(items []Item) []Result {
     var results []Result
     for _, item := range items {
@@ -504,7 +505,7 @@ func processItems(items []Item) []Result {
     return results
 }
 
-// 推荐：单次分配
+// 推荐：单次分配内存
 func processItems(items []Item) []Result {
     results := make([]Result, 0, len(items))
     for _, item := range items {
@@ -514,7 +515,7 @@ func processItems(items []Item) []Result {
 }
 ```
 
-### 对频繁分配的对象使用 sync.Pool
+### 对频繁分配使用 sync.Pool
 
 ```go
 var bufferPool = sync.Pool{
@@ -531,7 +532,7 @@ func ProcessRequest(data []byte) []byte {
     }()
 
     buf.Write(data)
-    // 处理过程...
+    // 处理...
     return buf.Bytes()
 }
 ```
@@ -539,7 +540,7 @@ func ProcessRequest(data []byte) []byte {
 ### 避免在循环中进行字符串拼接
 
 ```go
-// 不推荐：产生大量的字符串分配
+// 不推荐：产生大量字符串分配
 func join(parts []string) string {
     var result string
     for _, p := range parts {
@@ -568,7 +569,7 @@ func join(parts []string) string {
 
 ## Go 工具链集成
 
-### 核心命令
+### 常用命令
 
 ```bash
 # 构建并运行
@@ -621,29 +622,29 @@ issues:
   exclude-use-default: false
 ```
 
-## 快速参考：Go 习语（Idioms）
+## 快速参考：Go 惯用语 (Go Idioms)
 
-| 习语 | 说明 |
+| 惯用语 | 描述 |
 |-------|-------------|
 | 接受接口，返回结构体 | 函数接受接口参数，返回具体类型 |
 | 错误即值 (Errors are values) | 将错误视为一等公民，而非异常 |
-| 不要通过共享内存来通信 | 使用通道（Channel）在 Goroutine 之间进行协调 |
-| 使零值有用 | 类型应当在无需显式初始化的情况下即可工作 |
-| 少量的拷贝优于少量的依赖 | 避免不必要的外部依赖 |
-| 清晰优于巧妙 | 优先考虑可读性而非技巧 |
-| gofmt 并非谁的最爱，但却是每个人的朋友 | 始终使用 gofmt/goimports 进行格式化 |
-| 尽早返回 (Return early) | 先处理错误，保持“快乐路径”无缩进 |
+| 不要通过共享内存来通信 | 使用通道 (Channels) 在协程间进行协调 |
+| 使零值有用 | 类型在未显式初始化时也应能工作 |
+| 少许复制好过少许依赖 | 避免不必要的外部依赖 |
+| 清晰优于巧妙 | 优先考虑可读性而非代码的巧妙性 |
+| gofmt 并非谁的最爱，却是每个人的朋友 | 始终使用 gofmt/goimports 进行格式化 |
+| 尽早返回 | 优先处理错误，保持“快乐路径”不缩进 |
 
-## 应避免的反模式（Anti-Patterns）
+## 应避免的反模式 (Anti-Patterns)
 
 ```go
 // 不推荐：在长函数中使用裸返回 (Naked returns)
 func process() (result int, err error) {
     // ... 50 行代码 ...
-    return // 返回的是什么？
+    return // 返回了什么？
 }
 
-// 不推荐：使用 panic 进行控制流转
+// 不推荐：使用 panic 进行流程控制
 func GetUser(id string) *User {
     user, err := db.Find(id)
     if err != nil {
@@ -652,24 +653,22 @@ func GetUser(id string) *User {
     return user
 }
 
-// 不推荐：在结构体中传递上下文 (Context)
+// 不推荐：在结构体中传递 context
 type Request struct {
-    ctx context.Context // Context 应当作为第一个参数
+    ctx context.Context // Context 应当是第一个参数
     ID  string
 }
 
-// 推荐：将上下文作为第一个参数
+// 推荐：Context 作为第一个参数
 func ProcessRequest(ctx context.Context, id string) error {
     // ...
 }
 
 // 不推荐：混合使用值接收者和指针接收者
-type Counter{ n int }
+type Counter struct{ n int }
 func (c Counter) Value() int { return c.n }    // 值接收者
 func (c *Counter) Increment() { c.n++ }        // 指针接收者
-// 请选择一种风格并保持一致
+// 选择一种风格并保持一致
 ```
 
-**记住**：Go 代码应当以一种“最乏味”的方式呈现——它是可预测的、一致的且易于理解的。如有疑问，请保持简单。
-
-```
+**记住**：Go 代码应当以最好的方式显得“无聊”——它是可预测的、一致的且易于理解的。如有疑问，请保持简单。

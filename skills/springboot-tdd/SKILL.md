@@ -1,26 +1,27 @@
 ---
 name: springboot-tdd
-description: 使用 JUnit 5、Mockito、MockMvc、Testcontainers 和 JaCoCo 进行 Spring Boot 的测试驱动开发（TDD）。在添加功能、修复 Bug 或进行重构时使用。
+description: 使用 JUnit 5、Mockito、MockMvc、Testcontainers 和 JaCoCo 进行 Spring Boot 的测试驱动开发 (TDD)。在添加功能、修复 Bug 或进行重构时使用。
+origin: ECC
 ---
 
-# Spring Boot 测试驱动开发（TDD）工作流
+# Spring Boot TDD 工作流
 
-针对 Spring Boot 服务的 TDD 指南，要求 80% 以上的覆盖率（单元测试 + 集成测试）。
+针对具有 80% 以上覆盖率（单元测试 + 集成测试）的 Spring Boot 服务的 TDD 指南。
 
 ## 适用场景
 
-- 开发新功能或端点（Endpoints）
-- 修复 Bug 或进行代码重构
+- 新功能或 API 端点开发
+- Bug 修复或重构
 - 添加数据访问逻辑或安全规则
 
 ## 工作流
 
 1) 先写测试（测试应当失败）
-2) 实现最少量的代码以使测试通过
-3) 在测试通过（Green）的前提下进行重构
-4) 强制执行覆盖率检查（JaCoCo）
+2) 实现通过测试的最简代码
+3) 在测试通过的情况下重构代码
+4) 强制执行覆盖率检查 (JaCoCo)
 
-## 单元测试（JUnit 5 + Mockito）
+## 单元测试 (JUnit 5 + Mockito)
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -42,11 +43,11 @@ class MarketServiceTest {
 ```
 
 模式：
-- Arrange-Act-Assert（准备-执行-断言）
-- 避免部分打桩（Partial Mocks）；优先使用显式桩函数（Stubbing）
-- 使用 `@ParameterizedTest` 处理多种变体场景
+- 准备-执行-断言 (Arrange-Act-Assert)
+- 避免部分 Mock；优先使用显式打桩 (Stubbing)
+- 使用 `@ParameterizedTest` 处理用例变体
 
-## Web 层测试（MockMvc）
+## Web 层测试 (MockMvc)
 
 ```java
 @WebMvcTest(MarketController.class)
@@ -65,7 +66,7 @@ class MarketControllerTest {
 }
 ```
 
-## 集成测试（SpringBootTest）
+## 集成测试 (SpringBootTest)
 
 ```java
 @SpringBootTest
@@ -86,7 +87,7 @@ class MarketIntegrationTest {
 }
 ```
 
-## 持久层测试（DataJpaTest）
+## 持久层测试 (DataJpaTest)
 
 ```java
 @DataJpaTest
@@ -109,10 +110,10 @@ class MarketRepositoryTest {
 
 ## Testcontainers
 
-- 使用可重用的容器（如 Postgres/Redis）来模拟生产环境
-- 通过 `@DynamicPropertySource` 进行连接，将 JDBC URL 注入到 Spring 上下文中
+- 使用可重用的 Postgres/Redis 容器来镜像生产环境
+- 通过 `@DynamicPropertySource` 将 JDBC URL 注入到 Spring 上下文中
 
-## 覆盖率（JaCoCo）
+## 测试覆盖率 (JaCoCo)
 
 Maven 配置片段：
 ```xml
@@ -133,13 +134,13 @@ Maven 配置片段：
 </plugin>
 ```
 
-## 断言（Assertions）
+## 断言 (Assertions)
 
-- 为了提高可读性，优先选择 AssertJ (`assertThat`)
+- 为了提高可读性，优先使用 AssertJ (`assertThat`)
 - 对于 JSON 响应，使用 `jsonPath`
-- 对于异常测试：`assertThatThrownBy(...)`
+- 对于异常：`assertThatThrownBy(...)`
 
-## 测试数据构建器（Test Data Builders）
+## 测试数据生成器 (Test Data Builders)
 
 ```java
 class MarketBuilder {
@@ -151,7 +152,7 @@ class MarketBuilder {
 
 ## CI 命令
 
-- Maven：`mvn -T 4 test` 或 `mvn verify`
-- Gradle：`./gradlew test jacocoTestReport`
+- Maven: `mvn -T 4 test` 或 `mvn verify`
+- Gradle: `./gradlew test jacocoTestReport`
 
-**记住**：保持测试快速、隔离且具有确定性。测试的是行为，而非实现细节。
+**记住**：保持测试快速、隔离且具有确定性。测试行为，而不是实现细节。

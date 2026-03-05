@@ -1,58 +1,62 @@
-# 项目指南技能（Project Guidelines Skill，示例）
+---
+name: project-guidelines-example
+description: "基于真实生产应用程序的项目特定技能（Skill）模板示例。"
+origin: ECC
+---
 
-这是一个特定项目的技能（Skill）示例。请将其用作你自定义项目的模板。
+# 项目指南技能（Skill）示例
 
-基于真实的生产应用：[Zenith](https://zenith.chat) - AI 驱动的客户发现平台。
+这是一个项目特定技能（Skill）的示例。请将其作为你自己项目的模板。
+
+基于真实生产应用程序：[Zenith](https://zenith.chat) - AI 驱动的客户挖掘平台。
+
+## 何时使用
+
+在处理其设计的特定项目时参考此技能。项目技能包含：
+- 架构概览
+- 文件结构
+- 代码模式
+- 测试要求
+- 部署工作流
 
 ---
 
-## 何时使用 (When to Use)
+## 架构概览
 
-在处理该特定项目时参考此技能。项目技能包含：
-- 架构概览 (Architecture overview)
-- 文件结构 (File structure)
-- 代码模式 (Code patterns)
-- 测试要求 (Testing requirements)
-- 部署工作流 (Deployment workflow)
+**技术栈：**
+- **前端（Frontend）**: Next.js 15 (App Router), TypeScript, React
+- **后端（Backend）**: FastAPI (Python), Pydantic 模型
+- **数据库（Database）**: Supabase (PostgreSQL)
+- **AI**: 支持工具调用（tool calling）和结构化输出（structured output）的 Claude API
+- **部署（Deployment）**: Google Cloud Run
+- **测试（Testing）**: Playwright (E2E), pytest (后端), React Testing Library
 
----
-
-## 架构概览 (Architecture Overview)
-
-**技术栈 (Tech Stack)：**
-- **前端 (Frontend)**：Next.js 15 (App Router), TypeScript, React
-- **后端 (Backend)**：FastAPI (Python), Pydantic 模型
-- **数据库 (Database)**：Supabase (PostgreSQL)
-- **AI**：Claude API（支持工具调用与结构化输出）
-- **部署 (Deployment)**：Google Cloud Run
-- **测试 (Testing)**：Playwright (E2E), pytest (后端), React Testing Library
-
-**服务 (Services)：**
+**服务：**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                            │
+│                         前端（Frontend）                    │
 │  Next.js 15 + TypeScript + TailwindCSS                     │
-│  Deployed: Vercel / Cloud Run                              │
+│  部署于（Deployed）: Vercel / Cloud Run                    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                         Backend                             │
+│                         后端（Backend）                     │
 │  FastAPI + Python 3.11 + Pydantic                          │
-│  Deployed: Cloud Run                                       │
+│  部署于（Deployed）: Cloud Run                             │
 └─────────────────────────────────────────────────────────────┘
                               │
               ┌───────────────┼───────────────┐
               ▼               ▼               ▼
         ┌──────────┐   ┌──────────┐   ┌──────────┐
         │ Supabase │   │  Claude  │   │  Redis   │
-        │ Database │   │   API    │   │  Cache   │
+        │ 数据库   │   │   API    │   │  缓存    │
         └──────────┘   └──────────┘   └──────────┘
 ```
 
 ---
 
-## 文件结构 (File Structure)
+## 文件结构
 
 ```
 project/
@@ -61,33 +65,33 @@ project/
 │       ├── app/              # Next.js App Router 页面
 │       │   ├── api/          # API 路由
 │       │   ├── (auth)/       # 身份验证保护的路由
-│       │   └── workspace/    # 主应用工作区
+│       │   └── workspace/    # 主应用程序工作区
 │       ├── components/       # React 组件
 │       │   ├── ui/           # 基础 UI 组件
 │       │   ├── forms/        # 表单组件
 │       │   └── layouts/      # 布局组件
-│       ├── hooks/            # 自定义 React 钩子 (Hooks)
-│       ├── lib/              # 工具库
-│       ├── types/            # TypeScript 类型定义
+│       ├── hooks/            # 自定义 React Hooks
+│       ├── lib/              # 实用工具
+│       ├── types/            # TypeScript 定义
 │       └── config/           # 配置
 │
 ├── backend/
 │   ├── routers/              # FastAPI 路由处理器
 │   ├── models.py             # Pydantic 模型
-│   ├── main.py               # FastAPI 应用入口
-│   ├── auth_system.py        # 身份验证系统
+│   ├── main.py               # FastAPI 应用程序入口
+│   ├── auth_system.py        # 身份验证
 │   ├── database.py           # 数据库操作
 │   ├── services/             # 业务逻辑
 │   └── tests/                # pytest 测试
 │
 ├── deploy/                   # 部署配置
 ├── docs/                     # 文档
-└── scripts/                  # 工具脚本
+└── scripts/                  # 实用脚本
 ```
 
 ---
 
-## 代码模式 (Code Patterns)
+## 代码模式
 
 ### API 响应格式 (FastAPI)
 
@@ -170,7 +174,7 @@ async def analyze_with_claude(content: str) -> AnalysisResult:
         tool_choice={"type": "tool", "name": "provide_analysis"}
     )
 
-    # 提取工具调用结果
+    # 提取工具使用（tool_use）结果
     tool_use = next(
         block for block in response.content
         if block.type == "tool_use"
@@ -179,7 +183,7 @@ async def analyze_with_claude(content: str) -> AnalysisResult:
     return AnalysisResult(**tool_use.input)
 ```
 
-### 自定义钩子 (React Hooks)
+### 自定义 Hooks (React)
 
 ```typescript
 import { useState, useCallback } from 'react'
@@ -217,7 +221,7 @@ export function useApi<T>(
 
 ---
 
-## 测试要求 (Testing Requirements)
+## 测试要求
 
 ### 后端 (pytest)
 
@@ -284,18 +288,18 @@ describe('WorkspacePanel', () => {
 
 ---
 
-## 部署工作流 (Deployment Workflow)
+## 部署工作流
 
-### 部署前自查清单 (Pre-Deployment Checklist)
+### 部署前检查清单
 
-- [ ] 所有测试在本地通过
-- [ ] `npm run build` 成功 (前端)
-- [ ] `poetry run pytest` 通过 (后端)
-- [ ] 无硬编码的秘钥 (Secrets)
-- [ ] 环境变量已记录文档
-- [ ] 数据库迁移就绪
+- [ ] 所有测试均在本地通过
+- [ ] `npm run build` 成功（前端）
+- [ ] `poetry run pytest` 通过（后端）
+- [ ] 无硬编码密钥
+- [ ] 环境变量已记录
+- [ ] 数据库迁移已就绪
 
-### 部署命令 (Deployment Commands)
+### 部署命令
 
 ```bash
 # 构建并部署前端
@@ -307,7 +311,7 @@ cd backend
 gcloud run deploy backend --source .
 ```
 
-### 环境变量 (Environment Variables)
+### 环境变量
 
 ```bash
 # 前端 (.env.local)
@@ -324,22 +328,22 @@ SUPABASE_KEY=eyJ...
 
 ---
 
-## 核心规则 (Critical Rules)
+## 关键规则
 
-1. 代码、注释或文档中**严禁使用 Emoji**
-2. **不可变性 (Immutability)** - 永远不要直接改变对象或数组
-3. **测试驱动开发 (TDD)** - 在实现之前编写测试
-4. 最小 **80% 测试覆盖率**
-5. **大量小文件** - 通常为 200-400 行，最多 800 行
-6. 生产代码中**严禁使用 console.log**
-7. 使用 try/catch 进行**妥善的错误处理**
-8. 使用 Pydantic/Zod 进行**输入验证**
+1. **不得使用表情符号**（No emojis）：在代码、注释或文档中不得使用表情符号
+2. **不可变性**（Immutability）：永远不要直接修改对象或数组
+3. **TDD**：在实现之前编写测试
+4. **最低 80% 覆盖率**
+5. **采用多个小文件**：通常 200-400 行，最多 800 行
+6. **不得使用 console.log**：生产代码中不得使用 console.log
+7. **正确的错误处理**：使用 try/catch 进行错误处理
+8. **输入验证**：使用 Pydantic/Zod 进行输入验证
 
 ---
 
-## 相关技能 (Related Skills)
+## 相关技能
 
-- `coding-standards.md` - 通用代码最佳实践
-- `backend-patterns.md` - API 与数据库模式
-- `frontend-patterns.md` - React 与 Next.js 模式
-- `tdd-workflow/` - 测试驱动开发 (TDD) 方法论
+- `coding-standards.md` - 通用编码最佳实践
+- `backend-patterns.md` - API 和数据库模式
+- `frontend-patterns.md` - React 和 Next.js 模式
+- `tdd-workflow/` - 测试驱动开发（TDD）方法论
